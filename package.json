@@ -1,0 +1,16 @@
+{
+  "name": "artlaunch-hardhat",
+  "version": "1.0.0",
+  "description": "Platform for artists, indi-games, and other creators",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0"
+  }
+}
