@@ -1,2 +1,26 @@
-const contractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"; 
-const tokenAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; 
+const CONTRACT_ADDRESSES = {
+    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+};
+
+//Адильбек Осыган Функции дополни пж
+const ARTLAUNCH_ABI = [
+    "function campaignCount() view returns (uint256)",
+    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
+    "function createCampaign(string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
+    "function contribute(uint256 id) payable",
+    "event CampaignCreated(uint256 id, string title, uint256 goal)",
+    "event GoalAchieved(uint256 id, string message)"
+];
+
+const ARTTOKEN_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)"
+];
+
+let provider;
+let signer;
+let artLaunchContract;
+let artTokenContract;
+let userAddress
