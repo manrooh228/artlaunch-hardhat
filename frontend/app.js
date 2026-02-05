@@ -23,4 +23,62 @@ let provider;
 let signer;
 let artLaunchContract;
 let artTokenContract;
-let userAddress
+let userAddress;
+
+
+window.addEventListener('DOMContentLoaded', async () => {
+    
+});
+
+
+
+// Handle create campaign
+async function handleCreateCampaign(e) {
+    // e.preventDefault();
+    
+    // if (!signer) {
+    //     alert('Connect your wallet');
+    //     return;
+    // }
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creation...';
+        
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+        const prototypeUrl = document.getElementById('prototypeUrl').value;
+        const experience = document.getElementById('experience').value;
+        const fundingGoal = document.getElementById('fundingGoal').value;
+        const duration = document.getElementById('duration').value;
+        const category = document.getElementById('category').value;
+        
+        //converting currency of goal//
+
+        
+        //create campaign//
+        
+        
+        
+        const createForm = document.getElementById('createForm');
+        const toggleBtn = document.getElementById('toggleCreate');
+        createForm.classList.add('hidden');
+        toggleBtn.textContent = 'Create Project';
+        toggleBtn.classList.remove('btn-secondary');
+        toggleBtn.classList.add('btn-success');
+        
+        
+    } catch (error) {
+        // console.error('Error creating campaign:', error);
+        // alert('error: ' + (error.reason || error.message));
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+
