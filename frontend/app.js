@@ -1,9 +1,8 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    artLaunch: "",
+    artToken: ""
 };
 
-//Адильбек Осыган Функции дополни пж
 const ARTLAUNCH_ABI = [
     "function campaignCount() view returns (uint256)",
     "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
@@ -141,6 +140,64 @@ async function loadCampaigns() {
         console.error('Error loading campaigns:', error);
         grid.innerHTML = '<div class="loading">Ошибка загрузки проектов</div>';
     }
+}
+
+// сreate campaign card
+function createCampaignCard(id, campaign) {
+    const col = document.createElement('div');
+    col.className = 'col-md-4';
+    col.dataset.id = id;
+    col.dataset.category = campaign.category;
+    
+    const categoryNames = ['Искусство', 'Игры', 'Стартап'];
+    const categoryClasses = ['bg-art', 'bg-games', 'bg-startup'];
+    
+    const raised = parseFloat(ethers.utils.formatEther(campaign.amountRaised));
+    const goal = parseFloat(ethers.utils.formatEther(campaign.fundingGoal));
+    const progress = goal > 0 ? (raised / goal) * 100 : 0;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const deadline = campaign.deadline.toNumber();
+    const daysLeft = Math.max(0, Math.ceil((deadline - now) / 86400));
+    
+    col.innerHTML = `
+        <div class="card h-100 campaign-card">
+            <img src="${campaign.prototypeUrl}" class="card-img-top" alt="${campaign.title}" 
+                 style="height: 200px; object-fit: cover;" 
+                 onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
+            <div class="card-body">
+                <span class="badge ${categoryClasses[campaign.category]} mb-2">${categoryNames[campaign.category]}</span>
+                <h5 class="card-title">${campaign.title}</h5>
+                <p class="card-text text-muted" style="height: 48px; overflow: hidden;">${campaign.description}</p>
+                
+                <div class="progress mb-2" style="height: 8px;">
+                    <div class="progress-bar" style="width: ${Math.min(progress, 100)}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between small">
+                    <div>
+                        <strong>${raised.toFixed(3)} ETH</strong>
+                        <div class="text-muted">собрано</div>
+                    </div>
+                    <div>
+                        <strong>${goal.toFixed(3)} ETH</strong>
+                        <div class="text-muted">цель</div>
+                    </div>
+                    <div>
+                        <strong>${daysLeft}</strong>
+                        <div class="text-muted">дней</div>
+                    </div>
+                </div>
+                ${campaign.goalReached ? '<div class="alert alert-success mt-2 mb-0 py-1 text-center small">goal successed</div>' : ''}
+            </div>
+        </div>
+    `;
+    
+    col.addEventListener('click', () => {
+        window.location.href = `project.html?id=${id}`;
+    });
+    
+    return col;
 }
 
 // Handle create campaign
