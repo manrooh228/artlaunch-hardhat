@@ -1,0 +1,49 @@
+/* Минимальные кастомные стили поверх Bootstrap */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+}
+
+.container {
+    flex: 1;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Категории */
+.badge.bg-art {
+    background-color: #e91e63 !important;
+}
+
+.badge.bg-games {
+    background-color: #9c27b0 !important;
+}
+
+.badge.bg-startup {
+    background-color: #00bcd4 !important;
+}
+
+/* Навигация */
+.nav-link.active {
+    font-weight: bold;
+    color: #0d6efd !important;
+}
+
+/* Карточки проектов */
+.campaign-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.campaign-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Прогресс бар */
+.progress-bar {
+    background: linear-gradient(90deg, #0d6efd, #198754);
+}
