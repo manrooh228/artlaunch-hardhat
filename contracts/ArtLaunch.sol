@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: Adil
+// SPDX-License-Identifier: Adilbek
 pragma solidity ^0.8.20;
-
 import "./ArtToken.sol";
 
 contract ArtLaunch {
@@ -13,16 +12,15 @@ contract ArtLaunch {
         address payable creator;
         string title;
         string description;
-        string prototypeUrl; // Ссылка на изображение/прототип
-        string experience;   // Опыт автора/компании
-        uint256 fundingGoal; // Цель в wei 
-        uint256 deadline;    // Срок 
+        string prototypeUrl;
+        string experience;
+        uint256 fundingGoal;
+        uint256 deadline;
         uint256 amountRaised;
         Category category;
         bool goalReached;
         bool thanked;
     }
-
     mapping(uint256 => Campaign) public campaigns;
     
     event CampaignCreated(uint256 id, string title, uint256 goal);
@@ -31,57 +29,53 @@ contract ArtLaunch {
     constructor(address _tokenAddress) {
         rewardToken = ArtToken(_tokenAddress);
     }
-
-    // Создание кампании 
     function createCampaign(
-        string memory _title,
-        string memory _description,
-        string memory _prototypeUrl,
-        string memory _experience,
-        uint256 _fundingGoal,
-        uint256 _durationInDays,
-        Category _category
+        string memory title,
+        string memory description,
+        string memory prototypeUrl,
+        string memory experience,
+        uint256 fundingGoal,
+        uint256 durationInDays,
+        Category category
     ) public {
         campaignCount++;
         campaigns[campaignCount] = Campaign({
             creator: payable(msg.sender),
-            title: _title,
-            description: _description,
-            prototypeUrl: _prototypeUrl,
-            experience: _experience,
-            fundingGoal: _fundingGoal,
-            deadline: block.timestamp + (_durationInDays * 1 days),
+            title: title,
+            description: description,
+            prototypeUrl: prototypeUrl,
+            experience: experience,
+            fundingGoal: fundingGoal,
+            deadline: block.timestamp + (durationInDays * 1 days),
             amountRaised: 0,
-            category: _category,
+            category: category,
             goalReached: false,
             thanked: false
         });
-        emit CampaignCreated(campaignCount, _title, _fundingGoal);
+        emit CampaignCreated(campaignCount, title, fundingGoal);
     }
 
-    // Взнос и автоматическая выдача токенов
-    function contribute(uint256 _id) public payable {
-        Campaign storage c = campaigns[_id];
+    function contribute(uint256 id) public payable {
+        Campaign storage c = campaigns[id];
         require(block.timestamp < c.deadline, "Campaign ended");
         require(msg.value > 0, "Send ETH");
 
         c.amountRaised += msg.value;
         
-        // 1000 ART
         rewardToken.mint(msg.sender, msg.value * 1000);
 
-        if (c.amountRaised >= c.fundingGoal) {
+        if (c.amountRaised >= c.fundingGoal && !c.goalReached) {
             c.goalReached = true;
+            emit GoalAchieved(id, "Funding Goal Reached!");
         }
     }
 
-    // Функция благодарности при достижении цели
-    function sendThanks(uint256 _id, string memory _message) public {
-        Campaign storage c = campaigns[_id];
+    function sendThanks(uint256 id, string memory message) public {
+        Campaign storage c = campaigns[id];
         require(msg.sender == c.creator, "Only creator");
         require(c.goalReached, "Goal not reached");
         
         c.thanked = true;
-        emit GoalAchieved(_id, _message);
+        emit GoalAchieved(id, message);
     }
 }
