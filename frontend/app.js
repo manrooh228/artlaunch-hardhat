@@ -32,7 +32,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadCampaigns();
 });
 
-
+async function checkWalletConnection() {
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+                await connectWallet();
+            }
+        } catch (error) {
+            console.error('Error checking wallet connection:', error);
+        }
+    }
+}
 
 // Handle create campaign
 async function handleCreateCampaign(e) {
