@@ -45,6 +45,48 @@ async function checkWalletConnection() {
     }
 }
 
+// connect wallet
+async function connectWallet() {
+    if (typeof window.ethereum === 'undefined') {
+        alert('Please download MetaMask!');
+        return;
+    }
+
+    try {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        
+        artLaunchContract = new ethers.Contract(
+            CONTRACT_ADDRESSES.artLaunch,
+            ARTLAUNCH_ABI,
+            signer
+        );
+        
+        artTokenContract = new ethers.Contract(
+            CONTRACT_ADDRESSES.artToken,
+            ARTTOKEN_ABI,
+            provider
+        );
+        
+        updateWalletUI();
+        
+        document.getElementById('createSection').classList.remove('hidden');
+        
+        await loadUserProjects();
+        
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        
+    } catch (error) {
+        console.error('Error connecting wallet:', error);
+        alert('Error connecting wallet');
+    }
+}
+
+
+
 // Handle create campaign
 async function handleCreateCampaign(e) {
     // e.preventDefault();
