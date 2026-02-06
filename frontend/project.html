@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проект - ArtLaunch</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">ArtLaunch</a>
+            <div class="d-flex">
+                <button id="connectWallet" class="btn btn-primary btn-sm">Connect Wallet</button>
+                <div id="walletInfo" class="hidden ms-3">
+                    <small class="text-light d-block" id="walletAddress"></small>
+                    <small class="text-success" id="artBalance"></small>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+
+
+    <div class="container mt-4">
+        <div class="mb-3">
+            <a href="index.html" class="text-decoration-none">Back to main menu</a>
+        </div>
+
+        <div id="projectContent">
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Project loading...</p>
+            </div>
+        </div>
+
+
+
+
+
+
+        <template id="projectTemplate">
+            <div class="row">
+                <div class="col-md-6">
+                    <img id="projectImage" src="" class="img-fluid rounded mb-3" alt="Project Image">
+                </div>
+                <div class="col-md-6">
+                    <span class="badge mb-2" id="categoryBadge"></span>
+                    <h1 id="projectTitle"></h1>
+                    <p class="text-muted">Author: <span id="creatorAddress"></span></p>
+                    
+                    <!-- Funding Progress -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <h4 id="amountRaised">0</h4>
+                                    <small class="text-muted">ETH collected</small>
+                                </div>
+                                <div class="col-4">
+                                    <h4 id="fundingGoal">0</h4>
+                                    <small class="text-muted">ETH goal</small>
+                                </div>
+                                <div class="col-4">
+                                    <h4 id="daysLeft">0</h4>
+                                    <small class="text-muted">days left</small>
+                                </div>
+                            </div>
+                            
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar" id="progressFill" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mb-3"><span id="progressPercent">0</span>% collected</p>
+                            
+                            <p class="mb-1">It remains to collect: <strong id="remainingAmount">0 ETH</strong></p>
+                            <p>Deadline: <strong id="deadlineDate"></strong></p>
+
+                            <div id="goalReachedBadge" class="alert alert-success text-center hidden">
+                                Goal Succeded!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Donation Form -->
+                    <div id="donationSection" class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Support the project</h5>
+                            <form id="donationForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Donation amount (ETH)</label>
+                                    <input type="number" class="form-control" id="donationAmount" step="0.001" min="0.001" placeholder="0.01" required>
+                                    <small class="text-muted">You will get <span id="tokenReward">0</span> ART tokens</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Donate</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="campaignEnded" class="alert alert-warning hidden">
+                        Campaign ended
+                    </div>
+
+
+
+
+                    <div id="thanksSection" class="card mb-3 hidden">
+                        <div class="card-body">
+                            <h5 class="card-title">Thanks the Sponsors</h5>
+                            <form id="thanksForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Thank you message</label>
+                                    <textarea class="form-control" id="thanksMessage" rows="4" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">Send thanks</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="thankedBadge" class="alert alert-info text-center hidden">
+                        Создатель поблагодарил спонсоров
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h4>Project Description</h4>
+                            <p id="projectDescription"></p>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h4>Authors experience</h4>
+                            <p id="projectExperience"></p>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h4>Prototype link</h4>
+                            <a id="prototypeLink" href="#" target="_blank">Take a look -></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light text-center py-3 mt-5">
+        <p class="mb-0">© 2024 ArtLaunch. Платформа краудфандинга на блокчейне</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
+    <script src="project.js"></script>
+</body>
+</html>
