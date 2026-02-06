@@ -85,7 +85,63 @@ async function connectWallet() {
     }
 }
 
+// update wallet UI
+async function updateWalletUI() {
+    const connectBtn = document.getElementById('connectWallet');
+    const walletInfo = document.getElementById('walletInfo');
+    const addressSpan = document.getElementById('walletAddress');
+    const balanceSpan = document.getElementById('artBalance');
+    
+    connectBtn.classList.add('hidden');
+    walletInfo.classList.remove('hidden');
+    
+    addressSpan.textContent = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+    
+    try {
+        const balance = await artTokenContract.balanceOf(userAddress);
+        const formattedBalance = ethers.utils.formatEther(balance);
+        balanceSpan.textContent = `${parseFloat(formattedBalance).toFixed(2)} ART`;
+    } catch (error) {
+        console.error('Error getting balance:', error);
+        balanceSpan.textContent = '0 ART';
+    }
+}
 
+function handleAccountsChanged(accounts) {
+    if (accounts.length === 0) {
+        location.reload();
+    } else {
+        location.reload();
+    }
+}
+
+async function loadCampaigns() {
+    const grid = document.getElementById('campaignsGrid');
+    grid.innerHTML = '<div class="loading">Загрузка проектов...</div>';
+    
+    try {
+        const count = await artLaunchContract.campaignCount();
+        
+        if (count.toNumber() === 0) {
+            grid.innerHTML = '<div class="loading">Пока нет проектов</div>';
+            return;
+        }
+        
+        grid.innerHTML = '';
+        
+        for (let i = 1; i <= count.toNumber(); i++) {
+            const campaign = await artLaunchContract.campaigns(i);
+            const card = createCampaignCard(i, campaign);
+            grid.appendChild(card);
+        }
+        
+        filterCampaigns();
+        
+    } catch (error) {
+        console.error('Error loading campaigns:', error);
+        grid.innerHTML = '<div class="loading">Ошибка загрузки проектов</div>';
+    }
+}
 
 // Handle create campaign
 async function handleCreateCampaign(e) {
