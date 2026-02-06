@@ -27,7 +27,9 @@ let userAddress;
 
 
 window.addEventListener('DOMContentLoaded', async () => {
-    
+    await checkWalletConnection();
+    setupEventListeners();
+    await loadCampaigns();
 });
 
 
