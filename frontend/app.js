@@ -202,12 +202,12 @@ function createCampaignCard(id, campaign) {
 
 // Handle create campaign
 async function handleCreateCampaign(e) {
-    // e.preventDefault();
+    e.preventDefault();
     
-    // if (!signer) {
-    //     alert('Connect your wallet');
-    //     return;
-    // }
+    if (!signer) {
+        alert('Подключите кошелёк');
+        return;
+    }
     
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -215,7 +215,7 @@ async function handleCreateCampaign(e) {
     
     try {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Creation...';
+        submitBtn.textContent = 'Создание...';
         
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
@@ -225,28 +225,45 @@ async function handleCreateCampaign(e) {
         const duration = document.getElementById('duration').value;
         const category = document.getElementById('category').value;
         
-        //converting currency of goal//
-
+        const fundingGoalWei = ethers.utils.parseEther(fundingGoal);
         
-        //create campaign//
+        // Create campaign
+        const tx = await artLaunchContract.createCampaign(
+            title,
+            description,
+            prototypeUrl,
+            experience,
+            fundingGoalWei,
+            duration,
+            category
+        );
         
+        submitBtn.textContent = 'Ожидание подтверждения...';
+        await tx.wait();
         
+        alert('Проект успешно создан!');
+        form.reset();
         
+        // Hide the form and reset toggle button
         const createForm = document.getElementById('createForm');
         const toggleBtn = document.getElementById('toggleCreate');
         createForm.classList.add('hidden');
-        toggleBtn.textContent = 'Create Project';
+        toggleBtn.textContent = '➕ Создать проект';
         toggleBtn.classList.remove('btn-secondary');
         toggleBtn.classList.add('btn-success');
         
+        // Reload campaigns
+        await loadCampaigns();
+        await loadUserProjects();
         
     } catch (error) {
-        // console.error('Error creating campaign:', error);
-        // alert('error: ' + (error.reason || error.message));
+        console.error('Error creating campaign:', error);
+        alert('Ошибка создания проекта: ' + (error.reason || error.message));
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
     }
 }
+
 
 
