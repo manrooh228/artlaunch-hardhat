@@ -200,6 +200,46 @@ function createCampaignCard(id, campaign) {
     return col;
 }
 
+// update section title
+function updateSectionTitle() {
+    const titles = {
+        'all': 'Все проекты',
+        '0': 'Проекты: Искусство',
+        '1': 'Проекты: Игры',
+        '2': 'Проекты: Стартапы'
+    };
+    document.getElementById('sectionTitle').textContent = titles[currentCategory];
+}
+
+async function loadUserProjects() {
+    const myProjectsSection = document.getElementById('myProjectsSection');
+    const myProjectsList = document.getElementById('myProjectsList');
+    
+    try {
+        const count = await artLaunchContract.campaignCount();
+        const userProjects = [];
+        
+        for (let i = 1; i <= count.toNumber(); i++) {
+            const campaign = await artLaunchContract.campaigns(i);
+            if (campaign.creator.toLowerCase() === userAddress.toLowerCase()) {
+                userProjects.push({ id: i, campaign });
+            }
+        }
+        
+        if (userProjects.length > 0) {
+            myProjectsSection.classList.remove('hidden');
+            myProjectsList.innerHTML = '';
+            
+            userProjects.forEach(({ id, campaign }) => {
+                const card = createCampaignCard(id, campaign);
+                myProjectsList.appendChild(card);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading user projects:', error);
+    }
+}
+
 // Handle create campaign
 async function handleCreateCampaign(e) {
     e.preventDefault();
