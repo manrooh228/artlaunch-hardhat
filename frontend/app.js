@@ -18,6 +18,7 @@ const ARTTOKEN_ABI = [
     "function decimals() view returns (uint8)"
 ];
 
+let currentCategory = 'all';
 let provider;
 let signer;
 let artLaunchContract;
@@ -26,6 +27,13 @@ let userAddress;
 
 
 window.addEventListener('DOMContentLoaded', async () => {
+    
+    if (typeof ethers === 'undefined') {
+        console.error('Ethers.js не загружен!');
+        alert('Ошибка загрузки библиотеки Web3. Пожалуйста, перезагрузите страницу.');
+        return;
+    }
+    
     await checkWalletConnection();
     setupEventListeners();
     await loadCampaigns();
@@ -42,7 +50,7 @@ function setupEventListeners() {
             currentCategory = e.target.dataset.category;
             updateSectionTitle();
             filterCampaigns();
-        });
+        }); 
     });
     
     // Toggle create form - setup after wallet is connected
@@ -50,7 +58,6 @@ function setupEventListeners() {
     const createForm = document.getElementById('createForm');
     if (toggleBtn && createForm) {
         toggleBtn.addEventListener('click', () => {
-            // Check if wallet is connected before showing form
             if (!signer) {
                 alert('Сначала подключите кошелёк!');
                 return;
@@ -59,12 +66,10 @@ function setupEventListeners() {
             const isHidden = createForm.classList.contains('hidden');
             createForm.classList.toggle('hidden');
             
-            // Change button text based on state
             if (isHidden) {
                 toggleBtn.textContent = '✖ Отменить';
                 toggleBtn.classList.remove('btn-success');
                 toggleBtn.classList.add('btn-secondary');
-                // Scroll to form
                 setTimeout(() => {
                     createForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
@@ -105,8 +110,8 @@ async function connectWallet() {
     try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         
         artLaunchContract = new ethers.Contract(
@@ -149,7 +154,7 @@ async function updateWalletUI() {
     
     try {
         const balance = await artTokenContract.balanceOf(userAddress);
-        const formattedBalance = ethers.utils.formatEther(balance);
+        const formattedBalance = ethers.formatEther(balance);
         balanceSpan.textContent = `${parseFloat(formattedBalance).toFixed(2)} ART`;
     } catch (error) {
         console.error('Error getting balance:', error);
@@ -167,19 +172,34 @@ function handleAccountsChanged(accounts) {
 
 async function loadCampaigns() {
     const grid = document.getElementById('campaignsGrid');
-    grid.innerHTML = '<div class="loading">Loading projects...</div>';
+    grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Загрузка проектов...</p></div>';
     
     try {
+        if (CONTRACT_ADDRESSES.artLaunch === "YOUR_ARTLAUNCH_CONTRACT_ADDRESS") {
+            grid.innerHTML = '<div class="col-12"><div class="alert alert-warning">No contract entered.</div></div>';
+            return;
+        }
+        
+        if (!provider) {
+            provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
+            artLaunchContract = new ethers.Contract(
+                CONTRACT_ADDRESSES.artLaunch,
+                ARTLAUNCH_ABI,
+                provider
+            );
+        }
+        
         const count = await artLaunchContract.campaignCount();
         
-        if (count.toNumber() === 0) {
-            grid.innerHTML = '<div class="loading">Theres no projects yet</div>';
+        if (Number(count) === 0) {
+            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Theres no projects!</p></div>';
             return;
         }
         
         grid.innerHTML = '';
         
-        for (let i = 1; i <= count.toNumber(); i++) {
+        // Load each campaign
+        for (let i = 1; i <= Number(count); i++) {
             const campaign = await artLaunchContract.campaigns(i);
             const card = createCampaignCard(i, campaign);
             grid.appendChild(card);
@@ -189,7 +209,7 @@ async function loadCampaigns() {
         
     } catch (error) {
         console.error('Error loading campaigns:', error);
-        grid.innerHTML = '<div class="loading">Error loading projects</div>';
+        grid.innerHTML = `<div class="col-12"><div class="alert alert-danger">❌ Ошибка загрузки проектов: ${error.message}<br><small>Убедитесь, что контракты задеплоены и адреса правильные.</small></div></div>`;
     }
 }
 
@@ -203,19 +223,19 @@ function createCampaignCard(id, campaign) {
     const categoryNames = ['Art', 'Games', 'Startup'];
     const categoryClasses = ['bg-art', 'bg-games', 'bg-startup'];
     
-    const raised = parseFloat(ethers.utils.formatEther(campaign.amountRaised));
-    const goal = parseFloat(ethers.utils.formatEther(campaign.fundingGoal));
+    const raised = parseFloat(ethers.formatEther(campaign.amountRaised));
+    const goal = parseFloat(ethers.formatEther(campaign.fundingGoal));
     const progress = goal > 0 ? (raised / goal) * 100 : 0;
     
     const now = Math.floor(Date.now() / 1000);
-    const deadline = campaign.deadline.toNumber();
+    const deadline = Number(campaign.deadline);
     const daysLeft = Math.max(0, Math.ceil((deadline - now) / 86400));
     
     col.innerHTML = `
         <div class="card h-100 campaign-card">
             <img src="${campaign.prototypeUrl}" class="card-img-top" alt="${campaign.title}" 
                  style="height: 200px; object-fit: cover;" 
-                 onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
+                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'">
             <div class="card-body">
                 <span class="badge ${categoryClasses[campaign.category]} mb-2">${categoryNames[campaign.category]}</span>
                 <h5 class="card-title">${campaign.title}</h5>
@@ -281,7 +301,7 @@ async function loadUserProjects() {
         const count = await artLaunchContract.campaignCount();
         const userProjects = [];
         
-        for (let i = 1; i <= count.toNumber(); i++) {
+        for (let i = 1; i <= Number(count); i++) {
             const campaign = await artLaunchContract.campaigns(i);
             if (campaign.creator.toLowerCase() === userAddress.toLowerCase()) {
                 userProjects.push({ id: i, campaign });
@@ -327,7 +347,7 @@ async function handleCreateCampaign(e) {
         const duration = document.getElementById('duration').value;
         const category = document.getElementById('category').value;
         
-        const fundingGoalWei = ethers.utils.parseEther(fundingGoal);
+        const fundingGoalWei = ethers.parseEther(fundingGoal);
         
         // Create campaign
         const tx = await artLaunchContract.createCampaign(
