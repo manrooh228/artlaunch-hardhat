@@ -1,6 +1,6 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "",
-    artToken: ""
+    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 };
 
 const ARTLAUNCH_ABI = [
@@ -30,7 +30,58 @@ window.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     await loadCampaigns();
 });
-
+function setupEventListeners() {
+    // Connect wallet button
+    document.getElementById('connectWallet').addEventListener('click', connectWallet);
+    
+    // Category filter buttons
+    document.querySelectorAll('.nav-link[data-category]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentCategory = e.target.dataset.category;
+            updateSectionTitle();
+            filterCampaigns();
+        });
+    });
+    
+    // Toggle create form - setup after wallet is connected
+    const toggleBtn = document.getElementById('toggleCreate');
+    const createForm = document.getElementById('createForm');
+    if (toggleBtn && createForm) {
+        toggleBtn.addEventListener('click', () => {
+            // Check if wallet is connected before showing form
+            if (!signer) {
+                alert('Сначала подключите кошелёк!');
+                return;
+            }
+            
+            const isHidden = createForm.classList.contains('hidden');
+            createForm.classList.toggle('hidden');
+            
+            // Change button text based on state
+            if (isHidden) {
+                toggleBtn.textContent = '✖ Отменить';
+                toggleBtn.classList.remove('btn-success');
+                toggleBtn.classList.add('btn-secondary');
+                // Scroll to form
+                setTimeout(() => {
+                    createForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            } else {
+                toggleBtn.textContent = '➕ Создать проект';
+                toggleBtn.classList.remove('btn-secondary');
+                toggleBtn.classList.add('btn-success');
+            }
+        });
+    }
+    
+    // Create campaign form
+    const campaignForm = document.getElementById('campaignForm');
+    if (campaignForm) {
+        campaignForm.addEventListener('submit', handleCreateCampaign);
+    }
+}
 async function checkWalletConnection() {
     if (typeof window.ethereum !== 'undefined') {
         try {
@@ -116,13 +167,13 @@ function handleAccountsChanged(accounts) {
 
 async function loadCampaigns() {
     const grid = document.getElementById('campaignsGrid');
-    grid.innerHTML = '<div class="loading">Загрузка проектов...</div>';
+    grid.innerHTML = '<div class="loading">Loading projects...</div>';
     
     try {
         const count = await artLaunchContract.campaignCount();
         
         if (count.toNumber() === 0) {
-            grid.innerHTML = '<div class="loading">Пока нет проектов</div>';
+            grid.innerHTML = '<div class="loading">Theres no projects yet</div>';
             return;
         }
         
@@ -138,7 +189,7 @@ async function loadCampaigns() {
         
     } catch (error) {
         console.error('Error loading campaigns:', error);
-        grid.innerHTML = '<div class="loading">Ошибка загрузки проектов</div>';
+        grid.innerHTML = '<div class="loading">Error loading projects</div>';
     }
 }
 
@@ -149,7 +200,7 @@ function createCampaignCard(id, campaign) {
     col.dataset.id = id;
     col.dataset.category = campaign.category;
     
-    const categoryNames = ['Искусство', 'Игры', 'Стартап'];
+    const categoryNames = ['Art', 'Games', 'Startup'];
     const categoryClasses = ['bg-art', 'bg-games', 'bg-startup'];
     
     const raised = parseFloat(ethers.utils.formatEther(campaign.amountRaised));
@@ -177,15 +228,15 @@ function createCampaignCard(id, campaign) {
                 <div class="d-flex justify-content-between small">
                     <div>
                         <strong>${raised.toFixed(3)} ETH</strong>
-                        <div class="text-muted">собрано</div>
+                        <div class="text-muted">collected</div>
                     </div>
                     <div>
                         <strong>${goal.toFixed(3)} ETH</strong>
-                        <div class="text-muted">цель</div>
+                        <div class="text-muted">goal</div>
                     </div>
                     <div>
                         <strong>${daysLeft}</strong>
-                        <div class="text-muted">дней</div>
+                        <div class="text-muted">day</div>
                     </div>
                 </div>
                 ${campaign.goalReached ? '<div class="alert alert-success mt-2 mb-0 py-1 text-center small">goal successed</div>' : ''}
@@ -200,13 +251,24 @@ function createCampaignCard(id, campaign) {
     return col;
 }
 
+function filterCampaigns() {
+    const cards = document.querySelectorAll('#campaignsGrid > div[data-category]');
+    cards.forEach(card => {
+        if (currentCategory === 'all' || card.dataset.category === currentCategory) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
 // update section title
 function updateSectionTitle() {
     const titles = {
-        'all': 'Все проекты',
-        '0': 'Проекты: Искусство',
-        '1': 'Проекты: Игры',
-        '2': 'Проекты: Стартапы'
+        'all': 'All projects',
+        '0': 'Projects: Art',
+        '1': 'Projects: Games',
+        '2': 'Projects: Startups'
     };
     document.getElementById('sectionTitle').textContent = titles[currentCategory];
 }
@@ -245,7 +307,7 @@ async function handleCreateCampaign(e) {
     e.preventDefault();
     
     if (!signer) {
-        alert('Подключите кошелёк');
+        alert('Connect your wallet');
         return;
     }
     
@@ -255,7 +317,7 @@ async function handleCreateCampaign(e) {
     
     try {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Создание...';
+        submitBtn.textContent = 'Creation...';
         
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
@@ -278,17 +340,17 @@ async function handleCreateCampaign(e) {
             category
         );
         
-        submitBtn.textContent = 'Ожидание подтверждения...';
+        submitBtn.textContent = 'Acception await...';
         await tx.wait();
         
-        alert('Проект успешно создан!');
+        alert('Success!');
         form.reset();
         
         // Hide the form and reset toggle button
         const createForm = document.getElementById('createForm');
         const toggleBtn = document.getElementById('toggleCreate');
         createForm.classList.add('hidden');
-        toggleBtn.textContent = '➕ Создать проект';
+        toggleBtn.textContent = 'Create';
         toggleBtn.classList.remove('btn-secondary');
         toggleBtn.classList.add('btn-success');
         
@@ -298,7 +360,7 @@ async function handleCreateCampaign(e) {
         
     } catch (error) {
         console.error('Error creating campaign:', error);
-        alert('Ошибка создания проекта: ' + (error.reason || error.message));
+        alert('Error: ' + (error.reason || error.message));
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
