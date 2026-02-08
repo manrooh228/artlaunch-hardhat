@@ -1,15 +1,18 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    artLaunch: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+    artToken: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 };
 
 const ARTLAUNCH_ABI = [
     "function campaignCount() view returns (uint256)",
-    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
-    "function createCampaign(string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
+    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
+    "function createCampaign(string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
+    "function updateImage(uint256 id, string imageUrl)",
     "function contribute(uint256 id) payable",
+    "function getCampaign(uint256 id) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
     "event CampaignCreated(uint256 id, string title, uint256 goal)",
-    "event GoalAchieved(uint256 id, string message)"
+    "event GoalAchieved(uint256 id, string message)",
+    "event ImageUpdated(uint256 id, string imageUrl)"
 ];
 
 const ARTTOKEN_ABI = [
@@ -225,10 +228,12 @@ function createCampaignCard(id, campaign) {
     const now = Math.floor(Date.now() / 1000);
     const deadline = Number(campaign.deadline);
     const daysLeft = Math.max(0, Math.ceil((deadline - now) / 86400));
+
+    const imageToShow = campaign.imageUrl || campaign.prototypeUrl;
     
     col.innerHTML = `
         <div class="card h-100 campaign-card">
-            <img src="${campaign.prototypeUrl}" class="card-img-top" alt="${campaign.title}" 
+            <img src="${imageToShow}" class="card-img-top" alt="${campaign.title}" 
                  style="height: 200px; object-fit: cover;" 
                  onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'">
             <div class="card-body">
@@ -337,6 +342,7 @@ async function handleCreateCampaign(e) {
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
         const prototypeUrl = document.getElementById('prototypeUrl').value;
+        const imageUrl = document.getElementById('imageUrl').value;
         const experience = document.getElementById('experience').value;
         const fundingGoal = document.getElementById('fundingGoal').value;
         const duration = document.getElementById('duration').value;
@@ -349,6 +355,7 @@ async function handleCreateCampaign(e) {
             title,
             description,
             prototypeUrl,
+            imageUrl,
             experience,
             fundingGoalWei,
             duration,

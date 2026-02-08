@@ -1,13 +1,15 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    artLaunch: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+    artToken: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 };
 
 const ARTLAUNCH_ABI = [
-    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
+    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
     "function contribute(uint256 id) payable",
     "function sendThanks(uint256 id, string message)",
-    "event GoalAchieved(uint256 id, string message)"
+    "function updateImage(uint256 id, string imageUrl)",
+    "event GoalAchieved(uint256 id, string message)",
+    "event ImageUpdated(uint256 id, string imageUrl)"
 ];
 
 const ARTTOKEN_ABI = [
@@ -158,16 +160,28 @@ async function loadProject() {
     const projectContent = document.getElementById('projectContent');
     
     try {
-        if (!provider) {
-            provider = new ethers.providers.JsonRpcProvider('https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY');
-            artLaunchContract = new ethers.Contract(
-                CONTRACT_ADDRESSES.artLaunch,
-                ARTLAUNCH_ABI,
-                provider
-            );
-        }
+        const campaignData = await artLaunchContract.campaigns(campaignId);
         
-        campaign = await artLaunchContract.campaigns(campaignId);
+        // Handle both old and new contract formats
+        if (campaignData.length === 12) {
+            // New format with imageUrl
+            campaign = {
+                creator: campaignData[0],
+                title: campaignData[1],
+                description: campaignData[2],
+                prototypeUrl: campaignData[3],
+                imageUrl: campaignData[4],
+                experience: campaignData[5],
+                fundingGoal: campaignData[6],
+                deadline: campaignData[7],
+                amountRaised: campaignData[8],
+                category: campaignData[9],
+                goalReached: campaignData[10],
+                thanked: campaignData[11]
+            };
+        } else {
+            alert('niggas')
+        }
         
         renderProject();
         
@@ -196,9 +210,9 @@ function renderProject() {
 
 
 
-
+    const imageToShow = campaign.imageUrl || campaign.prototypeUrl;
     clone.querySelector('#projectTitle').textContent = campaign.title;
-    clone.querySelector('#projectImage').src = campaign.prototypeUrl;
+    clone.querySelector('#projectImage').src = imageToShow;
     clone.querySelector('#projectImage').alt = campaign.title;
     clone.querySelector('#creatorAddress').textContent = 
         `${campaign.creator.slice(0, 6)}...${campaign.creator.slice(-4)}`;
