@@ -13,6 +13,7 @@ contract ArtLaunch {
         string title;
         string description;
         string prototypeUrl;
+        string imageUrl;
         string experience;
         uint256 fundingGoal;
         uint256 deadline;
@@ -25,14 +26,17 @@ contract ArtLaunch {
     
     event CampaignCreated(uint256 id, string title, uint256 goal);
     event GoalAchieved(uint256 id, string message);
+    event ImageUpdated(uint256 id, string imageUrl);
 
     constructor(address _tokenAddress) {
         rewardToken = ArtToken(_tokenAddress);
     }
+
     function createCampaign(
         string memory title,
         string memory description,
         string memory prototypeUrl,
+        string memory imageUrl,
         string memory experience,
         uint256 fundingGoal,
         uint256 durationInDays,
@@ -44,6 +48,7 @@ contract ArtLaunch {
             title: title,
             description: description,
             prototypeUrl: prototypeUrl,
+            imageUrl: imageUrl,
             experience: experience,
             fundingGoal: fundingGoal,
             deadline: block.timestamp + (durationInDays * 1 days),
@@ -53,6 +58,14 @@ contract ArtLaunch {
             thanked: false
         });
         emit CampaignCreated(campaignCount, title, fundingGoal);
+    }
+
+    function updateImage(uint256 id, string memory newImageUrl) public {
+        Campaign storage c = campaigns[id];
+        require(msg.sender == c.creator, "Only creator can update");
+        
+        c.imageUrl = newImageUrl;
+        emit ImageUpdated(id, newImageUrl);
     }
 
     function contribute(uint256 id) public payable {
@@ -77,5 +90,36 @@ contract ArtLaunch {
         
         c.thanked = true;
         emit GoalAchieved(id, message);
+    }
+    
+    function getCampaign(uint256 id) public view returns (
+        address creator,
+        string memory title,
+        string memory description,
+        string memory prototypeUrl,
+        string memory imageUrl,
+        string memory experience,
+        uint256 fundingGoal,
+        uint256 deadline,
+        uint256 amountRaised,
+        Category category,
+        bool goalReached,
+        bool thanked
+    ) {
+        Campaign storage c = campaigns[id];
+        return (
+            c.creator,
+            c.title,
+            c.description,
+            c.prototypeUrl,
+            c.imageUrl,
+            c.experience,
+            c.fundingGoal,
+            c.deadline,
+            c.amountRaised,
+            c.category,
+            c.goalReached,
+            c.thanked
+        );
     }
 }
