@@ -30,7 +30,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     
     if (typeof ethers === 'undefined') {
         console.error('Ethers.js не загружен!');
-        alert('Ошибка загрузки библиотеки Web3. Пожалуйста, перезагрузите страницу.');
+        alert('error.');
         return;
     }
     
@@ -39,10 +39,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadCampaigns();
 });
 function setupEventListeners() {
-    // Connect wallet button
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     
-    // Category filter buttons
     document.querySelectorAll('.nav-link[data-category]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
@@ -53,13 +51,12 @@ function setupEventListeners() {
         }); 
     });
     
-    // Toggle create form - setup after wallet is connected
     const toggleBtn = document.getElementById('toggleCreate');
     const createForm = document.getElementById('createForm');
     if (toggleBtn && createForm) {
         toggleBtn.addEventListener('click', () => {
             if (!signer) {
-                alert('Сначала подключите кошелёк!');
+                alert('connect wallet!');
                 return;
             }
             
@@ -67,21 +64,20 @@ function setupEventListeners() {
             createForm.classList.toggle('hidden');
             
             if (isHidden) {
-                toggleBtn.textContent = '✖ Отменить';
+                toggleBtn.textContent = 'Cancel';
                 toggleBtn.classList.remove('btn-success');
                 toggleBtn.classList.add('btn-secondary');
                 setTimeout(() => {
                     createForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
             } else {
-                toggleBtn.textContent = '➕ Создать проект';
+                toggleBtn.textContent = 'Create Project';
                 toggleBtn.classList.remove('btn-secondary');
                 toggleBtn.classList.add('btn-success');
             }
         });
     }
     
-    // Create campaign form
     const campaignForm = document.getElementById('campaignForm');
     if (campaignForm) {
         campaignForm.addEventListener('submit', handleCreateCampaign);
@@ -140,7 +136,6 @@ async function connectWallet() {
     }
 }
 
-// update wallet UI
 async function updateWalletUI() {
     const connectBtn = document.getElementById('connectWallet');
     const walletInfo = document.getElementById('walletInfo');
@@ -175,7 +170,7 @@ async function loadCampaigns() {
     grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Загрузка проектов...</p></div>';
     
     try {
-        if (CONTRACT_ADDRESSES.artLaunch === "YOUR_ARTLAUNCH_CONTRACT_ADDRESS") {
+        if (CONTRACT_ADDRESSES.artLaunch === "") {
             grid.innerHTML = '<div class="col-12"><div class="alert alert-warning">No contract entered.</div></div>';
             return;
         }
