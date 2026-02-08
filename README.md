@@ -15,3 +15,6 @@ npx hardhat run scripts/deploy.js --network localhost
 
 ### Start frontend
 npx http-server frontend
+
+### For testing smart contract 
+npx hardhat test 
