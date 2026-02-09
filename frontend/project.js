@@ -1,6 +1,11 @@
 const CONTRACT_ADDRESSES = {
+<<<<<<< HEAD
     artLaunch: "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
     artToken: "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
+=======
+    artLaunch: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+    artToken: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
+>>>>>>> 033dae8a78f5ccf1b106fc8a449f021332ffbb43
 };
 
 const ARTLAUNCH_ABI = [
@@ -8,12 +13,17 @@ const ARTLAUNCH_ABI = [
     "function contribute(uint256 id) payable",
     "function sendThanks(uint256 id, string message)",
     "function updateImage(uint256 id, string imageUrl)",
+<<<<<<< HEAD
     "function getContributors(uint256 id) view returns (address[])",
     "function hasUserContributed(uint256 id, address user) view returns (bool)",
     "function getContributorCount(uint256 id) view returns (uint256)",
     "event GoalAchieved(uint256 id, string message)",
     "event ImageUpdated(uint256 id, string imageUrl)",
     "event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message)"
+=======
+    "event GoalAchieved(uint256 id, string message)",
+    "event ImageUpdated(uint256 id, string imageUrl)"
+>>>>>>> 033dae8a78f5ccf1b106fc8a449f021332ffbb43
 ];
 
 const ARTTOKEN_ABI = [

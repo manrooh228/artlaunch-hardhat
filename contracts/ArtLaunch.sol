@@ -14,6 +14,7 @@ contract ArtLaunch {
         string description;
         string prototypeUrl;
         string imageUrl;
+        string imageUrl;
         string experience;
         uint256 fundingGoal;
         uint256 deadline;
@@ -26,9 +27,15 @@ contract ArtLaunch {
 
     mapping(uint256 => address[]) private campaignContributors;
     mapping(uint256 => mapping(address => bool)) private hasContributed;
+
+    mapping(uint256 => address[]) private campaignContributors;
+    mapping(uint256 => mapping(address => bool)) private hasContributed;
     
     event CampaignCreated(uint256 id, string title, uint256 goal);
     event GoalAchieved(uint256 id, string message);
+    event ImageUpdated(uint256 id, string imageUrl);
+    event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message);
+
     event ImageUpdated(uint256 id, string imageUrl);
     event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message);
 
@@ -37,10 +44,12 @@ contract ArtLaunch {
         rewardToken = ArtToken(_tokenAddress);
     }
 
+
     function createCampaign(
         string memory title,
         string memory description,
         string memory prototypeUrl,
+        string memory imageUrl,
         string memory imageUrl,
         string memory experience,
         uint256 fundingGoal,
@@ -54,6 +63,7 @@ contract ArtLaunch {
             description: description,
             prototypeUrl: prototypeUrl,
             imageUrl: imageUrl,
+            imageUrl: imageUrl,
             experience: experience,
             fundingGoal: fundingGoal,
             deadline: block.timestamp + (durationInDays * 1 days),
@@ -63,6 +73,14 @@ contract ArtLaunch {
             thanked: false
         });
         emit CampaignCreated(campaignCount, title, fundingGoal);
+    }
+
+    function updateImage(uint256 id, string memory newImageUrl) public {
+        Campaign storage c = campaigns[id];
+        require(msg.sender == c.creator, "Only creator can update");
+        
+        c.imageUrl = newImageUrl;
+        emit ImageUpdated(id, newImageUrl);
     }
 
     function updateImage(uint256 id, string memory newImageUrl) public {
@@ -95,25 +113,30 @@ contract ArtLaunch {
         
         c.thanked = true;
         
+        // Emit event to creator
         emit GoalAchieved(id, message);
-
+        
+        // Emit individual events for each contributor
         address[] memory contributors = campaignContributors[id];
         for (uint256 i = 0; i < contributors.length; i++) {
             emit ThanksToContributor(id, contributors[i], message);
         }
     }
 
+    // Получить список всех донатеров проекта
     function getContributors(uint256 id) public view returns (address[] memory) {
         return campaignContributors[id];
     }
     
+    // Проверить, задонатил ли адрес на проект
     function hasUserContributed(uint256 id, address user) public view returns (bool) {
         return hasContributed[id][user];
     }
-
-    // function getContributorCount(uint256 id) public view returns (uint256) {
-    //     return campaignContributors[id].length;
-    // }
+    
+    // Получить количество уникальных донатеров
+    function getContributorCount(uint256 id) public view returns (uint256) {
+        return campaignContributors[id].length;
+    }
     
     function getCampaign(uint256 id) public view returns (
         address creator,

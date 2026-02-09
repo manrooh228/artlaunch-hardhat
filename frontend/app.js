@@ -1,10 +1,13 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
-    artToken: "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
+    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 };
 
 const ARTLAUNCH_ABI = [
     "function campaignCount() view returns (uint256)",
+    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
+    "function createCampaign(string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
+    "function updateImage(uint256 id, string imageUrl)",
     "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
     "function createCampaign(string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
     "function updateImage(uint256 id, string imageUrl)",
@@ -274,9 +277,12 @@ function createCampaignCard(id, campaign) {
     const daysLeft = Math.max(0, Math.ceil((deadline - now) / 86400));
 
     const imageToShow = campaign.imageUrl || campaign.prototypeUrl;
+
+    const imageToShow = campaign.imageUrl || campaign.prototypeUrl;
     
     col.innerHTML = `
         <div class="card h-100 campaign-card">
+            <img src="${imageToShow}" class="card-img-top" alt="${campaign.title}" 
             <img src="${imageToShow}" class="card-img-top" alt="${campaign.title}" 
                  style="height: 200px; object-fit: cover;" 
                  onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'">
@@ -387,6 +393,7 @@ async function handleCreateCampaign(e) {
         const description = document.getElementById('description').value;
         const prototypeUrl = document.getElementById('prototypeUrl').value;
         const imageUrl = document.getElementById('imageUrl').value;
+        const imageUrl = document.getElementById('imageUrl').value;
         const experience = document.getElementById('experience').value;
         const fundingGoal = document.getElementById('fundingGoal').value;
         const duration = document.getElementById('duration').value;
@@ -398,6 +405,7 @@ async function handleCreateCampaign(e) {
             title,
             description,
             prototypeUrl,
+            imageUrl,
             imageUrl,
             experience,
             fundingGoalWei,
@@ -431,7 +439,6 @@ async function handleCreateCampaign(e) {
 }
 
 
-// ============ NOTIFICATION SYSTEM ============
 
 function loadNotifications() {
     const stored = localStorage.getItem(`artlaunch_notifications_${userAddress}`);
@@ -459,14 +466,14 @@ function addNotification(campaignId, campaignTitle, message, type = 'thanks') {
     };
     
     notifications.unshift(notification);
-    
+
     if (notifications.length > 10) {
         notifications = notifications.slice(0, 50);
     }
     
     saveNotifications();
     updateNotificationUI();
-    
+
     if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('ArtLaunch', {
             body: `${campaignTitle}: ${message}`,
@@ -481,16 +488,16 @@ function updateNotificationUI() {
     const notificationList = document.getElementById('notificationList');
     
     if (!notificationBtn) return;
-    
+
     const unreadCount = notifications.filter(n => !n.read).length;
-    
+
     if (unreadCount > 0) {
         notificationBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
         notificationBadge.classList.remove('hidden');
     } else {
         notificationBadge.classList.add('hidden');
     }
-    
+
     if (notifications.length === 0) {
         notificationList.innerHTML = '<div class="text-center py-3 text-muted small">No notifications</div>';
     } else {
@@ -511,9 +518,9 @@ function updateNotificationUI() {
             item.addEventListener('click', () => {
                 const notificationId = parseInt(item.dataset.id);
                 const campaignId = item.dataset.campaignId;
-                
+
                 markNotificationRead(notificationId);
-                
+
                 window.location.href = `project.html?id=${campaignId}`;
             });
         });
@@ -534,6 +541,7 @@ function markAllNotificationsRead() {
     saveNotifications();
     updateNotificationUI();
 }
+
 
 function formatNotificationTime(timestamp) {
     const now = Date.now();
@@ -564,88 +572,43 @@ async function setupNotificationListeners() {
         
         const count = await artLaunchContract.campaignCount();
         const userCampaignIds = [];
-        const contributedCampaignIds = [];
         
-        for (let i = 1; i <= Number(count); i++) {
+        for (let i = 1; i <= count.toNumber(); i++) {
             try {
                 const campaign = await artLaunchContract.campaigns(i);
-
                 if (campaign.creator.toLowerCase() === userAddress.toLowerCase()) {
                     userCampaignIds.push(i);
                 }
-
-                try {
-                    const hasContributed = await artLaunchContract.hasUserContributed(i, userAddress);
-                    if (hasContributed) {
-                        contributedCampaignIds.push(i);
-                    }
-                } catch (err) {
-                    console.log('hasUserContributed not available, skipping check for campaign', i);
-                }
-                
             } catch (err) {
                 console.error(`Error loading campaign ${i}:`, err);
             }
         }
-        
-        console.log('User campaigns (creator):', userCampaignIds);
-        console.log('User campaigns (contributor):', contributedCampaignIds);
 
-        const goalFilter = artLaunchContract.filters.GoalAchieved();
+        const filter = artLaunchContract.filters.GoalAchieved();
         
-        artLaunchContract.on(goalFilter, async (id, message, event) => {
+        artLaunchContract.on(filter, async (id, message, event) => {
             const campaignId = id.toNumber();
             
             if (userCampaignIds.includes(campaignId)) {
                 try {
                     const campaign = await artLaunchContract.campaigns(campaignId);
+
                     addNotification(
                         campaignId,
                         campaign.title,
                         message,
-                        'goal_reached'
+                        'thanks'
                     );
                 } catch (err) {
-                    console.error('Error processing notification:', err);
+                    console.error('error proces:', err);
                 }
             }
         });
         
-        try {
-            const thanksFilter = artLaunchContract.filters.ThanksToContributor(null, userAddress);
-            
-            artLaunchContract.on(thanksFilter, async (campaignId, contributor, message, event) => {
-                const id = campaignId.toNumber();
-                
-                try {
-                    const campaign = await artLaunchContract.campaigns(id);
-                    
-                    // Add notification for contributor
-                    addNotification(
-                        id,
-                        campaign.title,
-                        `Creator thanks you: ${message}`,
-                        'thanks'
-                    );
-                    
-                    console.log('✅ Thanks notification received for campaign', id);
-                } catch (err) {
-                    console.error('Error processing thanks notification:', err);
-                }
-            });
-            
-            console.log('ThanksToContributor listener set up for user:', userAddress);
-        } catch (err) {
-            console.log('ThanksToContributor event not available (old contract?)');
-        }
-        
-        
-        console.log('Notification listeners set up');
-        console.log('Creator campaigns:', userCampaignIds.length);
-        console.log('Contributed campaigns:', contributedCampaignIds.length);
+        console.log('notf setttled:', userCampaignIds);
         
     } catch (error) {
-        console.error('Error setting up notification listeners:', error);
+        console.error('Error notf:', error);
     }
 }
 
