@@ -223,7 +223,7 @@ async function loadCampaigns() {
         }
         
         if (!provider) {
-            provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
+            provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');
             artLaunchContract = new ethers.Contract(
                 CONTRACT_ADDRESSES.artLaunch,
                 ARTLAUNCH_ABI,
