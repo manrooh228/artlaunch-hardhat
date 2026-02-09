@@ -14,7 +14,6 @@ contract ArtLaunch {
         string description;
         string prototypeUrl;
         string imageUrl;
-        string imageUrl;
         string experience;
         uint256 fundingGoal;
         uint256 deadline;
@@ -28,17 +27,10 @@ contract ArtLaunch {
     mapping(uint256 => address[]) private campaignContributors;
     mapping(uint256 => mapping(address => bool)) private hasContributed;
 
-    mapping(uint256 => address[]) private campaignContributors;
-    mapping(uint256 => mapping(address => bool)) private hasContributed;
-    
     event CampaignCreated(uint256 id, string title, uint256 goal);
     event GoalAchieved(uint256 id, string message);
     event ImageUpdated(uint256 id, string imageUrl);
     event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message);
-
-    event ImageUpdated(uint256 id, string imageUrl);
-    event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message);
-
 
     constructor(address _tokenAddress) {
         rewardToken = ArtToken(_tokenAddress);
@@ -49,7 +41,6 @@ contract ArtLaunch {
         string memory title,
         string memory description,
         string memory prototypeUrl,
-        string memory imageUrl,
         string memory imageUrl,
         string memory experience,
         uint256 fundingGoal,
@@ -62,7 +53,6 @@ contract ArtLaunch {
             title: title,
             description: description,
             prototypeUrl: prototypeUrl,
-            imageUrl: imageUrl,
             imageUrl: imageUrl,
             experience: experience,
             fundingGoal: fundingGoal,
@@ -83,13 +73,6 @@ contract ArtLaunch {
         emit ImageUpdated(id, newImageUrl);
     }
 
-    function updateImage(uint256 id, string memory newImageUrl) public {
-        Campaign storage c = campaigns[id];
-        require(msg.sender == c.creator, "Only creator can update");
-        
-        c.imageUrl = newImageUrl;
-        emit ImageUpdated(id, newImageUrl);
-    }
 
     function contribute(uint256 id) public payable {
         Campaign storage c = campaigns[id];
