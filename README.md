@@ -50,3 +50,10 @@ Data reading: Using JsonRpcProvider to get a list of all campaigns (campaigns, c
 Data Recording (Transactions): Using BrowserProvider and Signer (MetaMask) to create projects and send donations.
 Event listeners: The artLaunchContract.on(filter, callback) command allows the application to respond to other users' actions (for example, the appearance of a new donation) instantly.
 
+## Limitations and Future Improvements
+
+The current version of ArtLaunch is a minimum viable product that demonstrates the core functionality of a decentralized crowdfunding platform. Due to limited development time, some planned features were not fully implemented. These include a reward token system for donors, a refund mechanism for unsuccessful campaigns, and customizable project pages for creators. The notification system is currently limited to real-time interface updates based on smart contract events, while more advanced user notifications are planned for future versions. Further improvements include expanding project categories, enhancing security, and deploying the platform to public Ethereum test networks.
+
+## Conclusion 
+
+ArtLaunch demonstrates the practical use of blockchain technology for decentralized crowdfunding. By combining smart contracts, a web-based frontend, and wallet integration, the platform provides a transparent, secure, and intermediary-free solution for creators and supporters.
