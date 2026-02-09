@@ -1,15 +1,23 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    artLaunch: "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+    artToken: "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
 };
 
 const ARTLAUNCH_ABI = [
     "function campaignCount() view returns (uint256)",
-    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
-    "function createCampaign(string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
+    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
+    "function createCampaign(string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 durationInDays, uint8 category)",
+    "function updateImage(uint256 id, string imageUrl)",
     "function contribute(uint256 id) payable",
+    "function sendThanks(uint256 id, string message)",
+    "function getContributors(uint256 id) view returns (address[])",
+    "function hasUserContributed(uint256 id, address user) view returns (bool)",
+    "function getContributorCount(uint256 id) view returns (uint256)",
+    "function getCampaign(uint256 id) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
     "event CampaignCreated(uint256 id, string title, uint256 goal)",
-    "event GoalAchieved(uint256 id, string message)"
+    "event GoalAchieved(uint256 id, string message)",
+    "event ImageUpdated(uint256 id, string imageUrl)",
+    "event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message)"
 ];
 
 const ARTTOKEN_ABI = [
@@ -25,6 +33,9 @@ let artLaunchContract;
 let artTokenContract;
 let userAddress;
 
+let notifications = [];
+let eventListeners = [];
+let notificationCheckInterval;
 
 window.addEventListener('DOMContentLoaded', async () => {
     
@@ -41,6 +52,33 @@ window.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    
+    if (notificationBtn) {
+        notificationBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationDropdown.classList.toggle('show');
+            notificationDropdown.classList.toggle('hidden');
+        });
+    }
+    
+    const markAllRead = document.getElementById('markAllRead');
+    if (markAllRead) {
+        markAllRead.addEventListener('click', () => {
+            markAllNotificationsRead();
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (notificationBtn && notificationDropdown) {
+            if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                notificationDropdown.classList.remove('show');
+                notificationDropdown.classList.add('hidden');
+            }
+        }
+    });
+
     document.querySelectorAll('.nav-link[data-category]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
@@ -48,7 +86,7 @@ function setupEventListeners() {
             currentCategory = e.target.dataset.category;
             updateSectionTitle();
             filterCampaigns();
-        }); 
+        });
     });
     
     const toggleBtn = document.getElementById('toggleCreate');
@@ -83,6 +121,7 @@ function setupEventListeners() {
         campaignForm.addEventListener('submit', handleCreateCampaign);
     }
 }
+
 async function checkWalletConnection() {
     if (typeof window.ethereum !== 'undefined') {
         try {
@@ -125,6 +164,14 @@ async function connectWallet() {
         updateWalletUI();
         
         document.getElementById('createSection').classList.remove('hidden');
+        
+        document.getElementById('notificationBtn').classList.remove('hidden');
+        
+        loadNotifications();
+        
+        await setupNotificationListeners();
+        
+        requestNotificationPermission();
         
         await loadUserProjects();
         
@@ -225,10 +272,12 @@ function createCampaignCard(id, campaign) {
     const now = Math.floor(Date.now() / 1000);
     const deadline = Number(campaign.deadline);
     const daysLeft = Math.max(0, Math.ceil((deadline - now) / 86400));
+
+    const imageToShow = campaign.imageUrl || campaign.prototypeUrl;
     
     col.innerHTML = `
         <div class="card h-100 campaign-card">
-            <img src="${campaign.prototypeUrl}" class="card-img-top" alt="${campaign.title}" 
+            <img src="${imageToShow}" class="card-img-top" alt="${campaign.title}" 
                  style="height: 200px; object-fit: cover;" 
                  onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'">
             <div class="card-body">
@@ -337,6 +386,7 @@ async function handleCreateCampaign(e) {
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
         const prototypeUrl = document.getElementById('prototypeUrl').value;
+        const imageUrl = document.getElementById('imageUrl').value;
         const experience = document.getElementById('experience').value;
         const fundingGoal = document.getElementById('fundingGoal').value;
         const duration = document.getElementById('duration').value;
@@ -344,11 +394,11 @@ async function handleCreateCampaign(e) {
         
         const fundingGoalWei = ethers.parseEther(fundingGoal);
         
-        // Create campaign
         const tx = await artLaunchContract.createCampaign(
             title,
             description,
             prototypeUrl,
+            imageUrl,
             experience,
             fundingGoalWei,
             duration,
@@ -360,16 +410,14 @@ async function handleCreateCampaign(e) {
         
         alert('Success!');
         form.reset();
-        
-        // Hide the form and reset toggle button
+
         const createForm = document.getElementById('createForm');
         const toggleBtn = document.getElementById('toggleCreate');
         createForm.classList.add('hidden');
         toggleBtn.textContent = 'Create';
         toggleBtn.classList.remove('btn-secondary');
         toggleBtn.classList.add('btn-success');
-        
-        // Reload campaigns
+
         await loadCampaigns();
         await loadUserProjects();
         
@@ -383,4 +431,226 @@ async function handleCreateCampaign(e) {
 }
 
 
+// ============ NOTIFICATION SYSTEM ============
 
+function loadNotifications() {
+    const stored = localStorage.getItem(`artlaunch_notifications_${userAddress}`);
+    if (stored) {
+        notifications = JSON.parse(stored);
+        updateNotificationUI();
+    }
+}
+
+function saveNotifications() {
+    if (userAddress) {
+        localStorage.setItem(`artlaunch_notifications_${userAddress}`, JSON.stringify(notifications));
+    }
+}
+
+function addNotification(campaignId, campaignTitle, message, type = 'thanks') {
+    const notification = {
+        id: Date.now(),
+        campaignId,
+        campaignTitle,
+        message,
+        type,
+        timestamp: Date.now(),
+        read: false
+    };
+    
+    notifications.unshift(notification);
+    
+    if (notifications.length > 10) {
+        notifications = notifications.slice(0, 50);
+    }
+    
+    saveNotifications();
+    updateNotificationUI();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('ArtLaunch', {
+            body: `${campaignTitle}: ${message}`,
+            icon: '🔔'
+        });
+    }
+}
+
+function updateNotificationUI() {
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const notificationList = document.getElementById('notificationList');
+    
+    if (!notificationBtn) return;
+    
+    const unreadCount = notifications.filter(n => !n.read).length;
+    
+    if (unreadCount > 0) {
+        notificationBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        notificationBadge.classList.remove('hidden');
+    } else {
+        notificationBadge.classList.add('hidden');
+    }
+    
+    if (notifications.length === 0) {
+        notificationList.innerHTML = '<div class="text-center py-3 text-muted small">No notifications</div>';
+    } else {
+        notificationList.innerHTML = notifications.map(n => `
+            <div class="notification-item ${n.read ? '' : 'unread'}" data-id="${n.id}" data-campaign-id="${n.campaignId}">
+                <div class="d-flex align-items-start">
+                    <div class="notification-content flex-grow-1">
+                        <div class="notification-title">${n.campaignTitle}</div>
+                        <div class="notification-text">${n.message}</div>
+                        <div class="notification-time">${formatNotificationTime(n.timestamp)}</div>
+                    </div>
+                    ${!n.read ? '<div class="notification-badge-dot"></div>' : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        notificationList.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const notificationId = parseInt(item.dataset.id);
+                const campaignId = item.dataset.campaignId;
+                
+                markNotificationRead(notificationId);
+                
+                window.location.href = `project.html?id=${campaignId}`;
+            });
+        });
+    }
+}
+
+function markNotificationRead(notificationId) {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification) {
+        notification.read = true;
+        saveNotifications();
+        updateNotificationUI();
+    }
+}
+
+function markAllNotificationsRead() {
+    notifications.forEach(n => n.read = true);
+    saveNotifications();
+    updateNotificationUI();
+}
+
+function formatNotificationTime(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'только что';
+    if (minutes < 60) return `${minutes} мин назад`;
+    if (hours < 24) return `${hours} ч назад`;
+    if (days < 7) return `${days} д назад`;
+    
+    return new Date(timestamp).toLocaleDateString('ru-RU');
+}
+
+async function setupNotificationListeners() {
+    if (!artLaunchContract || !userAddress) return;
+    
+    try {
+        eventListeners.forEach(listener => {
+            if (listener.removeListener) {
+                listener.removeListener();
+            }
+        });
+        eventListeners = [];
+        
+        const count = await artLaunchContract.campaignCount();
+        const userCampaignIds = [];
+        const contributedCampaignIds = [];
+        
+        for (let i = 1; i <= Number(count); i++) {
+            try {
+                const campaign = await artLaunchContract.campaigns(i);
+
+                if (campaign.creator.toLowerCase() === userAddress.toLowerCase()) {
+                    userCampaignIds.push(i);
+                }
+
+                try {
+                    const hasContributed = await artLaunchContract.hasUserContributed(i, userAddress);
+                    if (hasContributed) {
+                        contributedCampaignIds.push(i);
+                    }
+                } catch (err) {
+                    console.log('hasUserContributed not available, skipping check for campaign', i);
+                }
+                
+            } catch (err) {
+                console.error(`Error loading campaign ${i}:`, err);
+            }
+        }
+        
+        console.log('User campaigns (creator):', userCampaignIds);
+        console.log('User campaigns (contributor):', contributedCampaignIds);
+
+        const goalFilter = artLaunchContract.filters.GoalAchieved();
+        
+        artLaunchContract.on(goalFilter, async (id, message, event) => {
+            const campaignId = id.toNumber();
+            
+            if (userCampaignIds.includes(campaignId)) {
+                try {
+                    const campaign = await artLaunchContract.campaigns(campaignId);
+                    addNotification(
+                        campaignId,
+                        campaign.title,
+                        message,
+                        'goal_reached'
+                    );
+                } catch (err) {
+                    console.error('Error processing notification:', err);
+                }
+            }
+        });
+        
+        try {
+            const thanksFilter = artLaunchContract.filters.ThanksToContributor(null, userAddress);
+            
+            artLaunchContract.on(thanksFilter, async (campaignId, contributor, message, event) => {
+                const id = campaignId.toNumber();
+                
+                try {
+                    const campaign = await artLaunchContract.campaigns(id);
+                    
+                    // Add notification for contributor
+                    addNotification(
+                        id,
+                        campaign.title,
+                        `Creator thanks you: ${message}`,
+                        'thanks'
+                    );
+                    
+                    console.log('✅ Thanks notification received for campaign', id);
+                } catch (err) {
+                    console.error('Error processing thanks notification:', err);
+                }
+            });
+            
+            console.log('ThanksToContributor listener set up for user:', userAddress);
+        } catch (err) {
+            console.log('ThanksToContributor event not available (old contract?)');
+        }
+        
+        
+        console.log('Notification listeners set up');
+        console.log('Creator campaigns:', userCampaignIds.length);
+        console.log('Contributed campaigns:', contributedCampaignIds.length);
+        
+    } catch (error) {
+        console.error('Error setting up notification listeners:', error);
+    }
+}
+
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}

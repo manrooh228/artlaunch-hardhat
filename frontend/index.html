@@ -30,8 +30,28 @@
                         <button class="btn btn-link nav-link" data-category="0">Art</button>
                     </li> -->
                 </ul>
-                <div class="d-flex">
-                    <button id="connectWallet" class="btn btn-primary">Connect Wallet</button>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Notification Bell -->
+                    <div class="position-relative">
+                        <button id="notificationBtn" class="btn btn-outline-light position-relative hidden">
+                            🔔
+                            <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger hidden">
+                                0
+                            </span>
+                        </button>
+                        <!-- Dropdown notifications -->
+                        <div id="notificationDropdown" class="dropdown-menu dropdown-menu-end notification-dropdown hidden" style="position: absolute; right: 0; min-width: 320px; max-height: 400px; overflow-y: auto;">
+                            <div class="dropdown-header d-flex justify-content-between align-items-center">
+                                <span>Notifications</span>
+                                <button id="markAllRead" class="btn btn-sm btn-link text-decoration-none p-0">Read all</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <div class="text-center py-3 text-muted small">No Notifications</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="toggleCreate" class="btn btn-success mb-3">Create project</button>
+                    <button id="connectWallet" class="btn btn-primary">Connect wallet</button>
                     <div id="walletInfo" class="hidden ms-3">
                         <small class="text-light d-block" id="walletAddress"></small>
                         <small class="text-success" id="artBalance"></small>
@@ -44,7 +64,7 @@
     <!--main -->
     <div class="container mt-4">
         <div id="createSection" class="hidden mb-4">
-            <button id="toggleCreate" class="btn btn-success mb-3">Create project</button>
+            <!-- <button id="toggleCreate" class="btn btn-success mb-3">Create project</button> -->
             
             <div id="createForm" class="card hidden">
                 <div class="card-body">
@@ -55,7 +75,7 @@
                             <input type="text" class="form-control" id="title" required>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="mb-3"> 
                             <label class="form-label">Description</label>
                             <textarea class="form-control" id="description" rows="4" required></textarea>
                         </div>
@@ -63,6 +83,12 @@
                         <div class="mb-3">
                             <label class="form-label">Link for prototype</label>
                             <input type="url" class="form-control" id="prototypeUrl" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Link for image</label>
+                            <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg" required>
+                            <small class="text-muted">Image will be shown in project card</small>
                         </div>
                         
                         <div class="mb-3">

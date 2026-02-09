@@ -1,13 +1,19 @@
 const CONTRACT_ADDRESSES = {
-    artLaunch: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    artToken: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    artLaunch: "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+    artToken: "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
 };
 
 const ARTLAUNCH_ABI = [
-    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
+    "function campaigns(uint256) view returns (address creator, string title, string description, string prototypeUrl, string imageUrl, string experience, uint256 fundingGoal, uint256 deadline, uint256 amountRaised, uint8 category, bool goalReached, bool thanked)",
     "function contribute(uint256 id) payable",
     "function sendThanks(uint256 id, string message)",
-    "event GoalAchieved(uint256 id, string message)"
+    "function updateImage(uint256 id, string imageUrl)",
+    "function getContributors(uint256 id) view returns (address[])",
+    "function hasUserContributed(uint256 id, address user) view returns (bool)",
+    "function getContributorCount(uint256 id) view returns (uint256)",
+    "event GoalAchieved(uint256 id, string message)",
+    "event ImageUpdated(uint256 id, string imageUrl)",
+    "event ThanksToContributor(uint256 indexed campaignId, address indexed contributor, string message)"
 ];
 
 const ARTTOKEN_ABI = [
@@ -158,16 +164,28 @@ async function loadProject() {
     const projectContent = document.getElementById('projectContent');
     
     try {
-        if (!provider) {
-            provider = new ethers.providers.JsonRpcProvider('https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY');
-            artLaunchContract = new ethers.Contract(
-                CONTRACT_ADDRESSES.artLaunch,
-                ARTLAUNCH_ABI,
-                provider
-            );
-        }
+        const campaignData = await artLaunchContract.campaigns(campaignId);
         
-        campaign = await artLaunchContract.campaigns(campaignId);
+        // Handle both old and new contract formats
+        if (campaignData.length === 12) {
+            // New format with imageUrl
+            campaign = {
+                creator: campaignData[0],
+                title: campaignData[1],
+                description: campaignData[2],
+                prototypeUrl: campaignData[3],
+                imageUrl: campaignData[4],
+                experience: campaignData[5],
+                fundingGoal: campaignData[6],
+                deadline: campaignData[7],
+                amountRaised: campaignData[8],
+                category: campaignData[9],
+                goalReached: campaignData[10],
+                thanked: campaignData[11]
+            };
+        } else {
+            alert('niggas')
+        }
         
         renderProject();
         
@@ -196,9 +214,9 @@ function renderProject() {
 
 
 
-
+    const imageToShow = campaign.imageUrl || campaign.prototypeUrl;
     clone.querySelector('#projectTitle').textContent = campaign.title;
-    clone.querySelector('#projectImage').src = campaign.prototypeUrl;
+    clone.querySelector('#projectImage').src = imageToShow;
     clone.querySelector('#projectImage').alt = campaign.title;
     clone.querySelector('#creatorAddress').textContent = 
         `${campaign.creator.slice(0, 6)}...${campaign.creator.slice(-4)}`;
@@ -313,7 +331,6 @@ async function handleDonation(e) {
         const amount = document.getElementById('donationAmount').value;
         const amountWei = ethers.parseEther(amount);
         
-        // Send donation
         const tx = await artLaunchContract.contribute(campaignId, {
             value: amountWei
         });
@@ -323,7 +340,6 @@ async function handleDonation(e) {
         
         alert(`Thanks for Donation! You got ${parseFloat(amount) * 1000} ART tokens!`);
         
-        // Reload project
         await loadProject();
         await updateWalletUI();
         
@@ -355,15 +371,13 @@ async function handleSendThanks(e) {
         
         const message = document.getElementById('thanksMessage').value;
         
-        // Send thanks
         const tx = await artLaunchContract.sendThanks(campaignId, message);
         
         submitBtn.textContent = 'Await of confimation...';
         await tx.wait();
         
         alert('Thank is send!');
-        
-        // Reload project
+
         await loadProject();
         
     } catch (error) {
@@ -374,3 +388,22 @@ async function handleSendThanks(e) {
         submitBtn.textContent = originalText;
     }
 }
+
+
+// async function loadContributorCount() {
+//     const contributorCountEl = document.getElementById('contributorCount');
+    
+//     if (!contributorCountEl) return;
+    
+//     try {
+//         if (artLaunchContract.getContributorCount) {
+//             const count = await artLaunchContract.getContributorCount(campaignId);
+//             contributorCountEl.textContent = count.toNumber();
+//         } else {
+//             contributorCountEl.parentElement.style.display = 'none';
+//         }
+//     } catch (error) {
+//         console.log('Contributor count not available');
+//         contributorCountEl.parentElement.style.display = 'none';
+//     }
+// }
