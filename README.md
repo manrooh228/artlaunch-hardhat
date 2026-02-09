@@ -1,6 +1,8 @@
 # ArtLaunch-hardhat
 Platform for artists, indi-games, and other creators
 
+Presentation link -> https://www.canva.com/design/DAHAyTVwjTo/KahIhUUTuRCtI0zbM1iOEA/edit?utm_content=DAHAyTVwjTo&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton 
+
 ## Deployment and execution instructions.
 ### Install packages
 npm install
