@@ -76,7 +76,7 @@ contract ArtLaunch {
 
     function contribute(uint256 id) public payable {
         Campaign storage c = campaigns[id];
-        // require(block.timestamp < c.deadline, "Campaign ended");
+        //require(block.timestamp < c.deadline, "Campaign ended");
         require(msg.value > 0, "Send ETH");
 
         c.amountRaised += msg.value;
