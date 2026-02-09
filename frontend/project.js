@@ -28,7 +28,6 @@ let campaign;
 
 window.addEventListener('DOMContentLoaded', async () => {
     if (typeof ethers === 'undefined') {
-        console.error('Ethers.js не загружен!');
         alert('error.');
         return;
     }
@@ -187,7 +186,7 @@ async function loadProject() {
         
     } catch (error) {
         console.error('Error loading project:', error);
-        projectContent.innerHTML = '<div class="loading">Ошибка загрузки проекта</div>';
+        projectContent.innerHTML = '<div class="loading">Error loading project</div>';
     }
 }
 
@@ -200,7 +199,7 @@ function renderProject() {
     const clone = template.content.cloneNode(true);
     
 
-    const categoryNames = ['Искусство', 'Игры', 'Стартап'];
+    const categoryNames = ['Art', 'Games', 'Startup'];
     const categoryClasses = ['bg-art', 'bg-games', 'bg-startup'];
     const categoryBadge = clone.querySelector('#categoryBadge');
     categoryBadge.textContent = categoryNames[campaign.category];

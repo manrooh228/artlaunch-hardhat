@@ -40,7 +40,6 @@ let notificationCheckInterval;
 window.addEventListener('DOMContentLoaded', async () => {
     
     if (typeof ethers === 'undefined') {
-        console.error('Ethers.js не загружен!');
         alert('error.');
         return;
     }
@@ -214,7 +213,7 @@ function handleAccountsChanged(accounts) {
 
 async function loadCampaigns() {
     const grid = document.getElementById('campaignsGrid');
-    grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Загрузка проектов...</p></div>';
+    grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading projects...</p></div>';
     
     try {
         if (CONTRACT_ADDRESSES.artLaunch === "") {
@@ -251,7 +250,7 @@ async function loadCampaigns() {
         
     } catch (error) {
         console.error('Error loading campaigns:', error);
-        grid.innerHTML = `<div class="col-12"><div class="alert alert-danger">❌ Ошибка загрузки проектов: ${error.message}<br><small>Убедитесь, что контракты задеплоены и адреса правильные.</small></div></div>`;
+        grid.innerHTML = `<div class="col-12"><div class="alert alert-danger">Error: ${error.message}</div></div>`;
     }
 }
 

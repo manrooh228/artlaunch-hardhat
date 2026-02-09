@@ -96,27 +96,22 @@ contract ArtLaunch {
         
         c.thanked = true;
         
-        // Emit event to creator
         emit GoalAchieved(id, message);
         
-        // Emit individual events for each contributor
         address[] memory contributors = campaignContributors[id];
         for (uint256 i = 0; i < contributors.length; i++) {
             emit ThanksToContributor(id, contributors[i], message);
         }
     }
 
-    // Получить список всех донатеров проекта
     function getContributors(uint256 id) public view returns (address[] memory) {
         return campaignContributors[id];
     }
     
-    // Проверить, задонатил ли адрес на проект
     function hasUserContributed(uint256 id, address user) public view returns (bool) {
         return hasContributed[id][user];
     }
     
-    // Получить количество уникальных донатеров
     function getContributorCount(uint256 id) public view returns (uint256) {
         return campaignContributors[id].length;
     }
